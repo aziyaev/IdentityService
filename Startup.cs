@@ -1,7 +1,9 @@
-﻿using IdentityService.Services;
+﻿using IdentityService.Interfaces;
+using IdentityService.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -19,51 +21,40 @@ namespace IdentityService
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers();
+            services.AddDbContext<MyDbContext>(options =>
+                options.UseSqlServer(Configuration.GetConnectionString("MyDb")));
 
-            services.AddSingleton<UserService>();
-            services.AddSingleton<TokenService>();
+            var jwtTokenSettings = new JwtTokenSettings();
+            Configuration.GetSection("Jwt").Bind(jwtTokenSettings);
+            services.Configure<JwtTokenSettings>(Configuration.GetSection("Jwt"));
 
-            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+            services.AddAuthorization();
+
+            services.AddAuthentication(options =>
             {
-                options.RequireHttpsMetadata = false;
-                options.SaveToken = true;
-                options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(Configuration["Jwt:Key"])),
                     ValidateIssuer = true,
-                    ValidIssuer = Configuration["Jwt:Issuer"],
                     ValidateAudience = true,
-                    ValidAudience = Configuration["Jwt:Audience"]
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = jwtTokenSettings.Issuer,
+                    ValidAudience = jwtTokenSettings.Audience,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtTokenSettings.SecretKey))
                 };
             });
 
-/*            services.AddAuthentication(options =>
-            {
-                options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
-            }).AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
-            {
-                options.Cookie.HttpOnly = true;
-                options.Cookie.SameSite = SameSiteMode.Lax;
-                options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
-            }).AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
-            {
+            services.AddScoped<IAuthenticationService, AuthenticationService>();
+            services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IPasswordHashingService, PasswordHashingService>();
 
-            });*/
-
-            services.AddAuthorization(options =>
-            {
-
-            });
-
-            services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "My API", Version = "v1" });
-            });
-
-            services.AddEndpointsApiExplorer();
+            services.AddControllers();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -72,30 +63,22 @@ namespace IdentityService
             {
                 app.UseDeveloperExceptionPage();
             }
+            else
+            {
+                app.UseExceptionHandler("/Error");
+                app.UseHsts();
+            }
 
             app.UseHttpsRedirection();
-
-            app.UseStaticFiles();
 
             app.UseRouting();
 
             app.UseAuthentication();
-
             app.UseAuthorization();
-
-            app.UseSwagger();
-            app.UseSwaggerUI(c =>
-            {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API v1");
-            });
 
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
-                endpoints.MapGet("/", async context =>
-                {
-                    await context.Response.WriteAsync("Hi Kitty");
-                });
             });
         }
     }
