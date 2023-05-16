@@ -2,6 +2,7 @@
 using IdentityService.Models;
 using IdentityService.Services;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace IdentityService.Controllers
 {

@@ -16,6 +16,7 @@ namespace IdentityService.Interfaces
         Task<bool> IsPhoneNumberAvailable(string phoneNumber);
 
         Task<IEnumerable<User>> SearchUsers(string searchTerm);
+        Task<IEnumerable<User>> GetTotalUsers();
         Task<int> GetTotalUserCount();
     }
 }

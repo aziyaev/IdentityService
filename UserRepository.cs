@@ -77,5 +77,10 @@ namespace IdentityService
                                                       u.Email.Value.Contains(searchTerm) ||
                                                       u.PhoneNumber.Value.Contains(searchTerm)).ToListAsync();
         }
+
+        public async Task<IEnumerable<User>> GetTotalUsers()
+        {
+            return await myDbContext.Users.ToListAsync();
+        }
     }
 }

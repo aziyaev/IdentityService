@@ -194,5 +194,10 @@ namespace IdentityService.Services
         {
             return await userRepository.GetTotalUserCount();
         }
+
+        public async Task<IEnumerable<User>> GetTotalUsers()
+        {
+            return await userRepository.GetTotalUsers();
+        }
     }
 }

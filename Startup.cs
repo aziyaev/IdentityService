@@ -54,6 +54,12 @@ namespace IdentityService
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IPasswordHashingService, PasswordHashingService>();
 
+            services.AddSwaggerGen(c =>
+            {
+                c.EnableAnnotations();
+                c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "Identity Service API", Version = "v1" });
+            });
+
             services.AddControllers();
         }
 
@@ -75,6 +81,12 @@ namespace IdentityService
 
             app.UseAuthentication();
             app.UseAuthorization();
+
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Identity Service API");
+            });
 
             app.UseEndpoints(endpoints =>
             {

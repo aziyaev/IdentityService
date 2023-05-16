@@ -19,6 +19,7 @@ namespace IdentityService.Interfaces
         bool IsPasswordValid(string password);
 
         Task<IEnumerable<User>> SearchUsers(string searchTerm);
+        Task<IEnumerable<User>> GetTotalUsers();
         Task<int> GetTotalUserCount();
     }
 }
